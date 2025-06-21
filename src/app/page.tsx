@@ -1,103 +1,299 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useCallback } from 'react'
+import { FileUpload } from '@/components/FileUpload'
+import { ProcessingCenter } from '@/components/ProcessingCenter'
+import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
+import { PreviewSection } from '@/components/PreviewSection'
+import { CompletionSection } from '@/components/CompletionSection'
+import { AppState, FileObject, AppError, ProcessedFileData } from '@/types'
+import { generateId } from '@/lib/utils'
+import { ExcelProcessor } from '@/lib/excel/processor'
+import { MasterWorkbookGenerator } from '@/lib/excel/masterWorkbook'
+
+export default function SupplierMerger() {
+  const [appState, setAppState] = useState<AppState>({
+    uploadedFiles: [],
+    processedData: {},
+    currentProgress: 0,
+    errors: [],
+    isProcessing: false,
+    masterWorkbook: null,
+    uiState: 'idle'
+  })
+
+  const handleFilesSelected = useCallback(async (files: File[]) => {
+    const newFiles: FileObject[] = files.map(file => ({
+      id: generateId(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file,
+      costColumnIndex: -1,
+      errors: [],
+      status: 'pending'
+    }))
+
+    setAppState(prev => ({
+      ...prev,
+      uploadedFiles: [...prev.uploadedFiles, ...newFiles],
+      uiState: 'uploading'
+    }))
+
+    // Process files immediately after upload
+    await processFiles(newFiles)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const processFiles = useCallback(async (files: FileObject[]) => {
+    setAppState(prev => ({ ...prev, isProcessing: true, uiState: 'processing' }))
+
+    try {
+      const processedFiles: FileObject[] = []
+      const processedData: Record<string, ProcessedFileData> = {}
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const progress = ((i + 1) / files.length) * 100
+
+        setAppState(prev => ({
+          ...prev,
+          currentProgress: progress
+        }))
+
+        try {
+          // Process individual file
+          const result = await ExcelProcessor.processFile(file.file)
+          
+          const processedFile: FileObject = {
+            ...file,
+            workbook: result.workbook,
+            costColumnIndex: result.analysis.costColumnIndex,
+            status: 'completed'
+          }
+
+          processedFiles.push(processedFile)
+          processedData[file.id] = {
+            headers: result.headers,
+            data: result.data,
+            analysis: result.analysis
+          }
+
+        } catch (err) {
+          const errorObj: AppError = {
+            id: generateId(),
+            type: 'PROCESSING_ERROR',
+            message: err instanceof Error ? err.message : 'Unknown processing error',
+            fileId: file.id,
+            timestamp: new Date(),
+            severity: 'high'
+          }
+
+          processedFiles.push({
+            ...file,
+            status: 'error',
+            errors: [errorObj.message]
+          })
+
+          setAppState(prev => ({
+            ...prev,
+            errors: [...prev.errors, errorObj]
+          }))
+        }
+      }
+
+      // Generate master workbook
+      const masterWorkbook = await MasterWorkbookGenerator.generateMasterWorkbook(processedFiles)
+
+      setAppState(prev => ({
+        ...prev,
+        uploadedFiles: processedFiles,
+        processedData,
+        masterWorkbook,
+        isProcessing: false,
+        currentProgress: 100,
+        uiState: 'complete'
+      }))
+
+    } catch (err) {
+      const errorObj: AppError = {
+        id: generateId(),
+        type: 'PROCESSING_ERROR',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        timestamp: new Date(),
+        severity: 'critical'
+      }
+
+      setAppState(prev => ({
+        ...prev,
+        errors: [...prev.errors, errorObj],
+        isProcessing: false,
+        uiState: 'error'
+      }))
+    }
+  }, [])
+
+  const handleDownload = useCallback(() => {
+    if (!appState.masterWorkbook) return
+
+    try {
+      MasterWorkbookGenerator.downloadMasterWorkbook(appState.masterWorkbook)
+    } catch {
+      const errorObj: AppError = {
+        id: generateId(),
+        type: 'PROCESSING_ERROR',
+        message: 'Failed to download file',
+        timestamp: new Date(),
+        severity: 'medium'
+      }
+
+      setAppState(prev => ({
+        ...prev,
+        errors: [...prev.errors, errorObj]
+      }))
+    }
+  }, [appState.masterWorkbook])
+
+  const handleReset = useCallback(() => {
+    setAppState({
+      uploadedFiles: [],
+      processedData: {},
+      currentProgress: 0,
+      errors: [],
+      isProcessing: false,
+      masterWorkbook: null,
+      uiState: 'idle'
+    })
+  }, [])
+
+  const handleErrorDismiss = useCallback((errorId: string) => {
+    setAppState(prev => ({
+      ...prev,
+      errors: prev.errors.filter(error => error.id !== errorId)
+    }))
+  }, [])
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      {/* Header */}
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                  Supplier Price List Merger
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Tesla-level precision. Jony Ive-inspired design.
+                </p>
+              </div>
+            </div>
+            
+            {appState.uiState === 'complete' && (
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+              >
+                Start Over
+              </button>
+            )}
+          </div>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Display */}
+        {appState.errors.length > 0 && (
+          <div className="mb-6">
+            <ErrorDisplay 
+              errors={appState.errors} 
+              onDismiss={handleErrorDismiss}
+            />
+          </div>
+        )}
+
+        {/* Progress Indicator */}
+        {appState.isProcessing && (
+          <div className="mb-8">
+            <ProgressIndicator 
+              progress={appState.currentProgress}
+              message="Processing your supplier files..."
+              stage="processing"
+            />
+          </div>
+        )}
+
+        {/* Main Content Based on UI State */}
+        {appState.uiState === 'idle' && (
+          <div className="text-center space-y-8">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-4">
+                Transform Your Supplier Price Lists
+              </h2>
+              <p className="text-lg text-slate-600 dark:text-slate-300 mb-8">
+                Upload multiple Excel files from your suppliers. We&apos;ll automatically detect cost columns and add markup calculations with precision engineering.
+              </p>
+            </div>
+            
+            <FileUpload 
+              onFilesSelected={handleFilesSelected}
+              disabled={appState.isProcessing}
+            />
+          </div>
+        )}
+
+        {(appState.uiState === 'uploading' || appState.uiState === 'processing') && (
+          <ProcessingCenter 
+            files={appState.uploadedFiles}
+            currentProgress={appState.currentProgress}
+          />
+        )}
+
+        {appState.uiState === 'complete' && (
+          <div className="space-y-8">
+            <PreviewSection 
+              files={appState.uploadedFiles}
+              processedData={appState.processedData}
+            />
+            
+            <CompletionSection 
+              masterWorkbook={appState.masterWorkbook}
+              onDownload={handleDownload}
+              fileCount={appState.uploadedFiles.length}
+            />
+          </div>
+        )}
+
+        {appState.uiState === 'error' && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
+              Processing Failed
+            </h3>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              We encountered an error while processing your files. Please try again.
+            </p>
+            <button
+              onClick={handleReset}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }

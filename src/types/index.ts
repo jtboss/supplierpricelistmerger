@@ -1,4 +1,5 @@
 // Core application types for Supplier Price List Merger
+import * as XLSX from 'xlsx'
 
 export interface FileObject {
   id: string
@@ -6,7 +7,7 @@ export interface FileObject {
   size: number
   type: string
   file: File
-  workbook?: any // XLSX.WorkBook type
+  workbook?: XLSX.WorkBook
   costColumnIndex: number
   errors: string[]
   status: FileStatus
@@ -14,13 +15,19 @@ export interface FileObject {
 
 export type FileStatus = 'pending' | 'processing' | 'completed' | 'error'
 
+export interface ProcessedFileData {
+  headers: string[]
+  data: unknown[][]
+  analysis: WorksheetAnalysis
+}
+
 export interface AppState {
   uploadedFiles: FileObject[]
-  processedData: Record<string, any>
+  processedData: Record<string, ProcessedFileData>
   currentProgress: number
   errors: AppError[]
   isProcessing: boolean
-  masterWorkbook: any | null // XLSX.WorkBook type
+  masterWorkbook: XLSX.WorkBook | null
   uiState: UIState
 }
 
@@ -71,6 +78,7 @@ export type ProcessingStage =
   | 'analyzing'
   | 'calculating'
   | 'generating'
+  | 'processing'
   | 'complete'
 
 export interface ColumnDetectionResult {
@@ -124,7 +132,7 @@ export interface ErrorDisplayProps {
 }
 
 export interface PreviewTableProps {
-  data: any[][]
+  data: unknown[][]
   headers: string[]
   maxRows?: number
   fileName: string

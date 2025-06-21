@@ -37,12 +37,12 @@ export function formatCurrency(value: number, currency = 'USD'): string {
 }
 
 // Check if value is a valid number
-export function isValidNumber(value: any): value is number {
+export function isValidNumber(value: unknown): value is number {
   return typeof value === 'number' && !isNaN(value) && isFinite(value)
 }
 
 // Debounce function for performance optimization
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
