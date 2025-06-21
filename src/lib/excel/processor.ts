@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx'
 import { 
-  FileObject, 
   WorksheetAnalysis, 
   ColumnDetectionResult, 
   COST_COLUMN_PATTERNS,
@@ -18,7 +17,7 @@ export class ExcelProcessor {
    */
   static validateFile(file: File): { isValid: boolean; error?: string } {
     // Check file type
-    if (!VALID_EXCEL_TYPES.includes(file.type as any)) {
+    if (!VALID_EXCEL_TYPES.includes(file.type as 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' | 'application/vnd.ms-excel')) {
       return {
         isValid: false,
         error: `Invalid file type. Please select an Excel file (.xlsx or .xls). Got: ${file.type}`,
@@ -100,7 +99,7 @@ export class ExcelProcessor {
     let hasHeaders = false
     
     // Check if first row contains mostly text (likely headers)
-    const firstRowCells = []
+    const firstRowCells: unknown[] = []
     for (let col = range.s.c; col <= range.e.c; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
       const cell = worksheet[cellAddress]
@@ -217,13 +216,13 @@ export class ExcelProcessor {
   /**
    * Extracts data from worksheet as 2D array
    */
-  static extractWorksheetData(worksheet: XLSX.WorkSheet): any[][] {
+  static extractWorksheetData(worksheet: XLSX.WorkSheet): unknown[][] {
     try {
       return XLSX.utils.sheet_to_json(worksheet, { 
         header: 1,
         blankrows: false,
         defval: '',
-      }) as any[][]
+      }) as unknown[][]
     } catch (error) {
       throw new Error(`Failed to extract worksheet data: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
@@ -244,7 +243,7 @@ export class ExcelProcessor {
     workbook: XLSX.WorkBook
     analysis: WorksheetAnalysis
     headers: string[]
-    data: any[][]
+    data: unknown[][]
   }> {
     // Validate file
     const validation = this.validateFile(file)
