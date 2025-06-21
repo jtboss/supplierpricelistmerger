@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { CompletionSection } from '@/components/CompletionSection'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { FileUpload } from '@/components/FileUpload'
+import { PreviewSection } from '@/components/PreviewSection'
 import { ProcessingCenter } from '@/components/ProcessingCenter'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
-import { ErrorDisplay } from '@/components/ErrorDisplay'
-import { PreviewSection } from '@/components/PreviewSection'
-import { CompletionSection } from '@/components/CompletionSection'
-import { AppState, FileObject, AppError, ProcessedFileData } from '@/types'
-import { generateId } from '@/lib/utils'
-import { ExcelProcessor } from '@/lib/excel/processor'
 import { MasterWorkbookGenerator } from '@/lib/excel/masterWorkbook'
+import { ExcelProcessor } from '@/lib/excel/processor'
+import { generateId } from '@/lib/utils'
+import { AppError, AppState, FileObject, ProcessedFileData } from '@/types'
+import { useCallback, useState } from 'react'
 
 export default function SupplierMerger() {
   const [appState, setAppState] = useState<AppState>({
@@ -64,8 +64,9 @@ export default function SupplierMerger() {
 
         try {
           // Process individual file
+          console.log(`Processing file: ${file.name}`)
           const result = await ExcelProcessor.processFile(file.file)
-          
+
           const processedFile: FileObject = {
             ...file,
             workbook: result.workbook,
@@ -80,11 +81,16 @@ export default function SupplierMerger() {
             analysis: result.analysis
           }
 
+          console.log(`Successfully processed file: ${file.name}`)
+
         } catch (err) {
+          console.error(`Error processing file ${file.name}:`, err)
+
+          const errorMessage = err instanceof Error ? err.message : 'Unknown processing error'
           const errorObj: AppError = {
             id: generateId(),
             type: 'PROCESSING_ERROR',
-            message: err instanceof Error ? err.message : 'Unknown processing error',
+            message: errorMessage,
             fileId: file.id,
             timestamp: new Date(),
             severity: 'high'
@@ -93,7 +99,7 @@ export default function SupplierMerger() {
           processedFiles.push({
             ...file,
             status: 'error',
-            errors: [errorObj.message]
+            errors: [errorMessage]
           })
 
           setAppState(prev => ({
@@ -195,7 +201,7 @@ export default function SupplierMerger() {
                 </p>
               </div>
             </div>
-            
+
             {appState.uiState === 'complete' && (
               <button
                 onClick={handleReset}
@@ -213,8 +219,8 @@ export default function SupplierMerger() {
         {/* Error Display */}
         {appState.errors.length > 0 && (
           <div className="mb-6">
-            <ErrorDisplay 
-              errors={appState.errors} 
+            <ErrorDisplay
+              errors={appState.errors}
               onDismiss={handleErrorDismiss}
             />
           </div>
@@ -223,7 +229,7 @@ export default function SupplierMerger() {
         {/* Progress Indicator */}
         {appState.isProcessing && (
           <div className="mb-8">
-            <ProgressIndicator 
+            <ProgressIndicator
               progress={appState.currentProgress}
               message="Processing your supplier files..."
               stage="processing"
@@ -242,8 +248,8 @@ export default function SupplierMerger() {
                 Upload multiple Excel files from your suppliers. We&apos;ll automatically detect cost columns and add markup calculations with precision engineering.
               </p>
             </div>
-            
-            <FileUpload 
+
+            <FileUpload
               onFilesSelected={handleFilesSelected}
               disabled={appState.isProcessing}
             />
@@ -251,7 +257,7 @@ export default function SupplierMerger() {
         )}
 
         {(appState.uiState === 'uploading' || appState.uiState === 'processing') && (
-          <ProcessingCenter 
+          <ProcessingCenter
             files={appState.uploadedFiles}
             currentProgress={appState.currentProgress}
           />
@@ -259,12 +265,12 @@ export default function SupplierMerger() {
 
         {appState.uiState === 'complete' && (
           <div className="space-y-8">
-            <PreviewSection 
+            <PreviewSection
               files={appState.uploadedFiles}
               processedData={appState.processedData}
             />
-            
-            <CompletionSection 
+
+            <CompletionSection
               masterWorkbook={appState.masterWorkbook}
               onDownload={handleDownload}
               fileCount={appState.uploadedFiles.length}

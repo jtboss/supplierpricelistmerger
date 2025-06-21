@@ -1,6 +1,6 @@
-import * as XLSX from 'xlsx'
-import { FileObject, MARKUP_PERCENTAGES, MARKUP_LABELS } from '@/types'
 import { isValidNumber } from '@/lib/utils'
+import { FileObject, MARKUP_LABELS, MARKUP_PERCENTAGES } from '@/types'
+import * as XLSX from 'xlsx'
 
 /**
  * Master Workbook Generator - Tesla-level precision for Excel processing
@@ -37,8 +37,13 @@ export class MasterWorkbookGenerator {
       throw new Error('Cost column not found')
     }
 
+    // Validate worksheet
+    if (!worksheet || !worksheet['!ref']) {
+      throw new Error('Invalid worksheet provided')
+    }
+
     // Get worksheet range
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1')
+    const range = XLSX.utils.decode_range(worksheet['!ref'])
     const newRange = {
       s: { r: range.s.r, c: range.s.c },
       e: { r: range.e.r, c: range.e.c + MARKUP_PERCENTAGES.length }
@@ -46,7 +51,7 @@ export class MasterWorkbookGenerator {
 
     // Create new worksheet with existing data
     const newWorksheet: XLSX.WorkSheet = {}
-    
+
     // Copy existing cells
     for (let row = range.s.r; row <= range.e.r; row++) {
       for (let col = range.s.c; col <= range.e.c; col++) {
@@ -72,17 +77,17 @@ export class MasterWorkbookGenerator {
     for (let row = range.s.r + 1; row <= range.e.r; row++) {
       const costAddress = XLSX.utils.encode_cell({ r: row, c: costColumnIndex })
       const costCell = worksheet[costAddress]
-      
+
       if (costCell && costCell.v !== undefined && costCell.v !== null && costCell.v !== '') {
         const costValue = typeof costCell.v === 'number' ? costCell.v : parseFloat(costCell.v.toString())
-        
+
         if (isValidNumber(costValue)) {
           // Add markup values for each percentage
           for (let i = 0; i < MARKUP_PERCENTAGES.length; i++) {
             const markupValue = this.calculateMarkup(costValue, MARKUP_PERCENTAGES[i])
             const newCol = range.e.c + 1 + i
             const markupAddress = XLSX.utils.encode_cell({ r: row, c: newCol })
-            
+
             if (markupValue !== null) {
               newWorksheet[markupAddress] = {
                 t: 'n', // number type
@@ -141,7 +146,7 @@ export class MasterWorkbookGenerator {
     // Handle collisions by appending numbers
     let counter = 2
     let uniqueName = `${cleanName}_${counter}`
-    
+
     while (existingNames.includes(uniqueName)) {
       counter++
       uniqueName = `${cleanName}_${counter}`
@@ -155,7 +160,7 @@ export class MasterWorkbookGenerator {
    */
   static async generateMasterWorkbook(files: FileObject[]): Promise<XLSX.WorkBook> {
     const masterWorkbook = XLSX.utils.book_new()
-    
+
     // Set workbook properties
     masterWorkbook.Props = {
       Title: 'Supplier Price List Master',
@@ -165,19 +170,62 @@ export class MasterWorkbookGenerator {
     }
 
     const usedSheetNames: string[] = []
+    let validSheetsAdded = 0
 
     for (const file of files) {
       if (file.status !== 'completed' || !file.workbook) {
+        console.warn(`Skipping file ${file.name}: status=${file.status}, hasWorkbook=${!!file.workbook}`)
         continue
       }
 
       try {
+        // Validate workbook structure
+        if (!file.workbook.SheetNames || file.workbook.SheetNames.length === 0) {
+          console.warn(`No worksheets found in file: ${file.name}`)
+          continue
+        }
+
+        if (!file.workbook.Sheets) {
+          console.warn(`No Sheets object found in file: ${file.name}`)
+          continue
+        }
+
         // Get the first worksheet from the source file
         const sourceSheetName = file.workbook.SheetNames[0]
-        const sourceWorksheet = file.workbook.Sheets[sourceSheetName]
+        let sourceWorksheet = file.workbook.Sheets[sourceSheetName]
+
+        // If direct access failed, try alternative approaches
+        if (!sourceWorksheet) {
+          console.warn(`Direct access to worksheet "${sourceSheetName}" failed for file: ${file.name}`)
+          const availableSheets = Object.keys(file.workbook.Sheets)
+          console.log('Available sheet keys:', availableSheets)
+
+          // Try case-insensitive match
+          const matchingSheet = availableSheets.find(key =>
+            key.toLowerCase() === sourceSheetName.toLowerCase()
+          )
+
+          if (matchingSheet) {
+            sourceWorksheet = file.workbook.Sheets[matchingSheet]
+            console.log(`Found worksheet using case-insensitive match: "${matchingSheet}"`)
+          } else {
+            // Use first available sheet
+            const firstAvailableKey = availableSheets[0]
+            if (firstAvailableKey) {
+              sourceWorksheet = file.workbook.Sheets[firstAvailableKey]
+              console.log(`Using first available worksheet: "${firstAvailableKey}"`)
+            }
+          }
+        }
 
         if (!sourceWorksheet) {
-          console.warn(`No worksheet found in file: ${file.name}`)
+          console.warn(`No accessible worksheet found in file: ${file.name}. Available sheets: ${Object.keys(file.workbook.Sheets).join(', ')}`)
+          continue
+        }
+
+        // Validate worksheet has content
+        if (!sourceWorksheet['!ref']) {
+          console.warn(`Worksheet "${sourceSheetName}" in file "${file.name}" is empty`)
           continue
         }
 
@@ -188,7 +236,13 @@ export class MasterWorkbookGenerator {
         // Add markup columns if cost column was detected
         let processedWorksheet: XLSX.WorkSheet
         if (file.costColumnIndex !== -1) {
-          processedWorksheet = this.addMarkupColumns(sourceWorksheet, file.costColumnIndex)
+          try {
+            processedWorksheet = this.addMarkupColumns(sourceWorksheet, file.costColumnIndex)
+          } catch (markupError) {
+            console.warn(`Failed to add markup columns for ${file.name}:`, markupError)
+            // Fall back to copying worksheet as-is
+            processedWorksheet = { ...sourceWorksheet }
+          }
         } else {
           // Copy worksheet as-is if no cost column detected
           processedWorksheet = { ...sourceWorksheet }
@@ -196,17 +250,22 @@ export class MasterWorkbookGenerator {
 
         // Add processed worksheet to master workbook
         XLSX.utils.book_append_sheet(masterWorkbook, processedWorksheet, sheetName)
+        validSheetsAdded++
+        console.log(`Successfully added worksheet "${sheetName}" from file "${file.name}"`)
 
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error)
-        // Continue with other files even if one fails
+        // Continue with other files instead of failing completely
+        continue
       }
     }
 
-    if (masterWorkbook.SheetNames.length === 0) {
+    // Validate that we have at least one valid worksheet
+    if (validSheetsAdded === 0) {
       throw new Error('No valid worksheets to include in master workbook')
     }
 
+    console.log(`Master workbook created with ${validSheetsAdded} worksheets`)
     return masterWorkbook
   }
 
@@ -251,28 +310,28 @@ export class MasterWorkbookGenerator {
     try {
       // Generate Excel buffer
       const buffer = this.generateExcelBuffer(workbook)
-      
+
       // Create download URL
       const url = this.createDownloadUrl(buffer)
-      
+
       // Generate filename
       const filename = this.generateFileName()
-      
+
       // Create and trigger download
       const link = document.createElement('a')
       link.href = url
       link.download = filename
       link.style.display = 'none'
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
+
       // Clean up URL
       setTimeout(() => {
         URL.revokeObjectURL(url)
       }, 1000)
-      
+
     } catch (error) {
       throw new Error(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
