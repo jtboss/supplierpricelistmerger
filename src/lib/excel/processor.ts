@@ -278,11 +278,15 @@ export class ExcelProcessor {
    */
   static detectCostColumn(worksheet: XLSX.WorkSheet): number {
     if (!worksheet || !worksheet['!ref']) {
+      console.log('❌ Cost column detection: No worksheet or ref')
       return -1
     }
 
     const range = XLSX.utils.decode_range(worksheet['!ref'])
     const results: ColumnDetectionResult[] = []
+
+    console.log('🔍 Starting cost column detection...')
+    console.log('Worksheet range:', range)
 
     // Get headers from first row
     for (let col = range.s.c; col <= range.e.c; col++) {
@@ -291,6 +295,7 @@ export class ExcelProcessor {
 
       if (cell && cell.v && typeof cell.v === 'string') {
         const header = cell.v.toString().trim()
+        console.log(`Column ${col} (${String.fromCharCode(65 + col)}): "${header}"`)
 
         // Test against each pattern
         for (const pattern of COST_COLUMN_PATTERNS) {
@@ -304,6 +309,8 @@ export class ExcelProcessor {
             else if (header.toLowerCase().includes('unit price')) confidence = 0.85
             else confidence = 0.7
 
+            console.log(`✅ MATCH FOUND! Column ${col} "${header}" matches pattern ${pattern.source} with confidence ${confidence}`)
+
             results.push({
               columnIndex: col,
               confidence,
@@ -313,16 +320,22 @@ export class ExcelProcessor {
             break // Only use first matching pattern per column
           }
         }
+      } else {
+        console.log(`Column ${col}: No header or non-string value`)
       }
     }
 
     // Return column with highest confidence, or -1 if none found
-    if (results.length === 0) return -1
+    if (results.length === 0) {
+      console.log('❌ No cost column found!')
+      return -1
+    }
 
     const bestMatch = results.reduce((best, current) =>
       current.confidence > best.confidence ? current : best
     )
 
+    console.log(`🎯 Best cost column match: Column ${bestMatch.columnIndex} "${bestMatch.columnName}" (confidence: ${bestMatch.confidence})`)
     return bestMatch.columnIndex
   }
 
