@@ -1,16 +1,14 @@
 'use client'
 
-import { AceternityDropZone } from '@/components/ui/aceternity-drop-zone'
-import { BackgroundBeams } from '@/components/ui/background-beams'
-import { FloatingIcon } from '@/components/ui/floating-icon'
-import { GlowingCard } from '@/components/ui/glowing-card'
-import { ShimmerButton } from '@/components/ui/shimmer-button'
+import { MinimalButton } from '@/components/ui/minimal-button'
+import { MinimalCard } from '@/components/ui/minimal-card'
+import { MinimalDropZone } from '@/components/ui/minimal-drop-zone'
 import { MasterWorkbookGenerator } from '@/lib/excel/masterWorkbook'
 import { ExcelProcessor } from '@/lib/excel/processor'
 import { generateId } from '@/lib/utils'
 import { AppError, FileObject } from '@/types'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Download, FileCheck, Layers, Shield, Sparkles, Upload, Zap } from 'lucide-react'
+import { Download, FileCheck, FileSpreadsheet, Upload, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 interface ProcessedFile {
@@ -27,23 +25,13 @@ interface ProcessedFile {
 
 type AppState = 'upload' | 'processing' | 'completed'
 
-export default function AceternityPage() {
+export default function HomePage() {
   const [files, setFiles] = useState<ProcessedFile[]>([])
   const [appState, setAppState] = useState<AppState>('upload')
   const [processingProgress, setProcessingProgress] = useState(0)
   const [currentProcessingStep, setCurrentProcessingStep] = useState('')
   const [mergedFileUrl, setMergedFileUrl] = useState<string | null>(null)
   const [errors, setErrors] = useState<AppError[]>([])
-
-  // Processing steps for potential future use
-  // const processingSteps = [
-  //   'Validating file formats',
-  //   'Reading Excel sheets', 
-  //   'Detecting cost columns',
-  //   'Adding markup calculations',
-  //   'Merging supplier data',
-  //   'Generating master workbook'
-  // ]
 
   const handleFilesSelected = useCallback((selectedFiles: File[]) => {
     const newFiles: ProcessedFile[] = selectedFiles.map(file => ({
@@ -180,57 +168,24 @@ export default function AceternityPage() {
     setErrors([])
   }, [])
 
-  const features = [
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: "Lightning Fast Processing",
-      description: "Advanced algorithms for rapid Excel analysis"
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Enterprise Security",
-      description: "Your data never leaves your browser"
-    },
-    {
-      icon: <Layers className="w-6 h-6" />,
-      title: "Smart Markup Detection",
-      description: "AI-powered cost column identification"
-    }
-  ]
-
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background Effects */}
-      <BackgroundBeams className="opacity-60" />
-      <div className="absolute inset-0 grid-pattern opacity-20" />
-
-      <motion.div
-        className="container mx-auto px-4 py-8 relative z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Header */}
-        <motion.header
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <FloatingIcon size="lg" className="mx-auto mb-8">
-            <Sparkles className="w-12 h-12 text-white" />
-          </FloatingIcon>
+        <header className="text-center mb-12">
+          <div className="flex items-center justify-center w-16 h-16 bg-primary rounded-lg mb-6 mx-auto">
+            <FileSpreadsheet className="w-8 h-8 text-primary-foreground" />
+          </div>
 
-          <h1 className="text-hero font-bold text-gradient-hero mb-6 leading-tight">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             Supplier Price List Merger
           </h1>
 
-          <p className="text-xl text-aceternity-text-secondary max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Transform your supplier data with intelligent markup calculations.
-            <br />
-            <span className="text-gradient-accent font-semibold">Tesla-level precision meets Aceternity-inspired design.</span>
+            Clean, efficient, and reliable.
           </p>
-        </motion.header>
+        </header>
 
         <AnimatePresence mode="wait">
           {appState === 'upload' && (
@@ -239,208 +194,165 @@ export default function AceternityPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-6xl mx-auto space-y-12"
+              transition={{ duration: 0.3 }}
+              className="space-y-8"
             >
-              <AceternityDropZone
+              <MinimalDropZone
                 onFilesSelected={handleFilesSelected}
                 acceptedTypes={['.xlsx', '.xls', '.csv']}
                 maxFiles={10}
-                maxFileSize="10MB"
                 title="Upload your supplier files"
                 subtitle="Drag and drop Excel or CSV files, or click to browse"
               />
 
               {files.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <GlowingCard className="mb-8">
-                    <h3 className="text-2xl font-bold text-aceternity-text-primary mb-6">
-                      Selected Files ({files.length})
-                    </h3>
-                    <div className="grid gap-4">
-                      {files.map((file) => (
-                        <motion.div
-                          key={file.id}
-                          className="flex items-center justify-between p-4 rounded-2xl glassmorphism border border-aceternity-surface-border"
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-3 h-3 rounded-full bg-gradient-primary animate-pulse" />
-                            <div>
-                              <p className="font-semibold text-aceternity-text-primary">{file.name}</p>
-                              <p className="text-sm text-aceternity-text-muted">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
+                <MinimalCard>
+                  <h3 className="text-xl font-semibold mb-4">
+                    Selected Files ({files.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {files.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <FileSpreadsheet className="w-5 h-5 text-primary" />
+                          <div>
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
                           </div>
-                          <button
-                            onClick={() => handleRemoveFile(file.id)}
-                            className="text-aceternity-status-error hover:bg-aceternity-status-error/10 p-2 rounded-full transition-colors"
-                          >
-                            ×
-                          </button>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </GlowingCard>
-
-                  <div className="flex justify-center">
-                    <ShimmerButton onClick={handleMergeFiles}>
-                      <span className="flex items-center space-x-2">
-                        <span>Merge {files.length} Files</span>
-                        <ArrowRight className="w-5 h-5" />
-                      </span>
-                    </ShimmerButton>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFile(file.id)}
+                          className="p-1 hover:bg-destructive/10 rounded text-destructive"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </motion.div>
-              )}
 
-              {/* Features Section */}
-              <motion.div
-                className="grid md:grid-cols-3 gap-8 mt-16"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                {features.map((feature, index) => (
-                  <GlowingCard key={index} className="text-center p-8">
-                    <FloatingIcon className="mx-auto mb-4" size="md">
-                      {feature.icon}
-                    </FloatingIcon>
-                    <h3 className="text-xl font-bold text-aceternity-text-primary mb-3">
-                      {feature.title}
-                    </h3>
-                    <p className="text-aceternity-text-secondary">
-                      {feature.description}
-                    </p>
-                  </GlowingCard>
-                ))}
-              </motion.div>
+                  <div className="mt-6 flex justify-center">
+                    <MinimalButton
+                      onClick={handleMergeFiles}
+                      size="lg"
+                      className="px-8"
+                    >
+                      Merge {files.length} Files
+                    </MinimalButton>
+                  </div>
+                </MinimalCard>
+              )}
             </motion.div>
           )}
 
           {appState === 'processing' && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-2xl mx-auto"
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
             >
-              <GlowingCard className="text-center p-12">
-                <FloatingIcon size="lg" className="mx-auto mb-8" pulseEffect>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Sparkles className="w-12 h-12 text-white" />
-                  </motion.div>
-                </FloatingIcon>
+              <MinimalCard className="text-center" padding="lg">
+                <div className="flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6 mx-auto">
+                  <Upload className="w-8 h-8 text-primary-foreground animate-pulse" />
+                </div>
 
-                <h2 className="text-3xl font-bold text-aceternity-text-primary mb-4">
+                <h2 className="text-2xl font-bold mb-4">
                   Processing Files...
                 </h2>
 
-                <p className="text-lg text-aceternity-text-secondary mb-8">
+                <p className="text-muted-foreground mb-6">
                   {currentProcessingStep}
                 </p>
 
-                <div className="w-full bg-aceternity-surface-border rounded-full h-3 mb-4 overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-primary rounded-full"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${processingProgress}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
+                <div className="minimal-progress mb-4">
+                  <div
+                    className="minimal-progress-indicator"
+                    style={{ transform: `translateX(-${100 - processingProgress}%)` }}
                   />
                 </div>
 
-                <p className="text-sm text-aceternity-text-muted">
+                <p className="text-sm text-muted-foreground">
                   {Math.round(processingProgress)}% Complete
                 </p>
-              </GlowingCard>
+              </MinimalCard>
             </motion.div>
           )}
 
           {appState === 'completed' && (
             <motion.div
               key="completed"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-2xl mx-auto text-center space-y-8"
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
             >
-              <FloatingIcon size="lg" className="mx-auto">
-                <FileCheck className="w-12 h-12 text-aceternity-status-success" />
-              </FloatingIcon>
+              <MinimalCard className="text-center" padding="lg">
+                <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6 mx-auto">
+                  <FileCheck className="w-8 h-8 text-green-600" />
+                </div>
 
-              <GlowingCard className="p-12">
-                <h2 className="text-4xl font-bold text-gradient-hero mb-4">
+                <h2 className="text-2xl font-bold mb-4">
                   Merger Complete!
                 </h2>
-                <p className="text-lg text-aceternity-text-secondary mb-8">
+                <p className="text-muted-foreground mb-6">
                   Your supplier data has been processed and merged with markup calculations.
                 </p>
 
                 {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length > 0 && (
-                  <motion.div
-                    className="glassmorphism rounded-2xl p-6 mb-8 border border-aceternity-status-success/20"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <h3 className="text-lg font-semibold text-aceternity-status-success mb-2">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-green-800 mb-1">
                       Markup Columns Added
                     </h3>
-                    <p className="text-aceternity-text-secondary">
+                    <p className="text-sm text-green-600">
                       Successfully added 5%, 10%, 15%, 20%, and 30% markup columns to {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length} files
                     </p>
-                  </motion.div>
+                  </div>
                 )}
 
                 {errors.length > 0 && (
-                  <motion.div
-                    className="glassmorphism rounded-2xl p-6 mb-8 border border-aceternity-status-error/20"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <h3 className="text-lg font-semibold text-aceternity-status-error mb-2">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-red-800 mb-2">
                       Processing Errors
                     </h3>
-                    <ul className="text-aceternity-text-secondary text-left space-y-1">
+                    <ul className="text-sm text-red-600 text-left space-y-1">
                       {errors.map(error => (
                         <li key={error.id}>• {error.message}</li>
                       ))}
                     </ul>
-                  </motion.div>
+                  </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <ShimmerButton onClick={handleDownload} disabled={!mergedFileUrl}>
-                    <span className="flex items-center space-x-2">
-                      <Download className="w-5 h-5" />
-                      <span>Download Complete</span>
-                    </span>
-                  </ShimmerButton>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <MinimalButton
+                    onClick={handleDownload}
+                    disabled={!mergedFileUrl}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Complete
+                  </MinimalButton>
 
-                  <ShimmerButton variant="secondary" onClick={handleStartOver}>
-                    <span className="flex items-center space-x-2">
-                      <Upload className="w-5 h-5" />
-                      <span>Process More Files</span>
-                    </span>
-                  </ShimmerButton>
+                  <MinimalButton
+                    variant="secondary"
+                    onClick={handleStartOver}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Process More Files
+                  </MinimalButton>
                 </div>
-              </GlowingCard>
+              </MinimalCard>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   )
 }

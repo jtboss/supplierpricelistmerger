@@ -13,10 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Supplier Price List Merger | Aceternity UI",
-  description: "Transform your supplier data with intelligent markup calculations. Tesla-level precision meets Aceternity-inspired design.",
+  title: "Supplier Price List Merger",
+  description: "Transform your supplier data with intelligent markup calculations. Clean, minimal, and efficient design.",
   keywords: ["supplier", "price list", "Excel", "markup", "business tools", "data processing"],
-  authors: [{ name: "Tesla-Level Engineering Team" }],
+  authors: [{ name: "Development Team" }],
 };
 
 export const viewport = {
@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
