@@ -33,8 +33,6 @@ export class MasterWorkbookGenerator {
    * Add markup columns to a worksheet
    */
   static addMarkupColumns(worksheet: XLSX.WorkSheet, costColumnIndex: number): XLSX.WorkSheet {
-    console.log(`🔧 addMarkupColumns called with costColumnIndex: ${costColumnIndex}`)
-
     if (costColumnIndex === -1) {
       throw new Error('Cost column not found')
     }
@@ -46,35 +44,27 @@ export class MasterWorkbookGenerator {
 
     // Get worksheet range
     const range = XLSX.utils.decode_range(worksheet['!ref'])
-    console.log(`📊 Original worksheet range: ${worksheet['!ref']}`)
-    console.log(`📊 Range details:`, range)
 
     const newRange = {
       s: { r: range.s.r, c: range.s.c },
       e: { r: range.e.r, c: range.e.c + MARKUP_PERCENTAGES.length }
     }
-    console.log(`📊 New range after adding markup columns:`, newRange)
 
     // Create new worksheet with existing data
     const newWorksheet: XLSX.WorkSheet = {}
 
     // Copy existing cells
-    console.log(`📋 Copying existing cells...`)
-    let copiedCells = 0
     for (let row = range.s.r; row <= range.e.r; row++) {
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
         const cell = worksheet[cellAddress]
         if (cell) {
           newWorksheet[cellAddress] = { ...cell }
-          copiedCells++
         }
       }
     }
-    console.log(`📋 Copied ${copiedCells} existing cells`)
 
     // Add markup column headers (first row)
-    console.log(`📝 Adding markup column headers...`)
     for (let i = 0; i < MARKUP_LABELS.length; i++) {
       const newCol = range.e.c + 1 + i
       const headerAddress = XLSX.utils.encode_cell({ r: range.s.r, c: newCol })
@@ -82,23 +72,15 @@ export class MasterWorkbookGenerator {
         t: 's', // string type
         v: MARKUP_LABELS[i]
       }
-      console.log(`📝 Added header "${MARKUP_LABELS[i]}" at ${headerAddress}`)
     }
 
     // Add markup calculations for each data row
-    console.log(`💰 Adding markup calculations...`)
-    let calculatedRows = 0
-    let errorRows = 0
-
     for (let row = range.s.r + 1; row <= range.e.r; row++) {
       const costAddress = XLSX.utils.encode_cell({ r: row, c: costColumnIndex })
       const costCell = worksheet[costAddress]
 
-      console.log(`Row ${row}: Cost cell ${costAddress} =`, costCell?.v)
-
       if (costCell && costCell.v !== undefined && costCell.v !== null && costCell.v !== '') {
         const costValue = typeof costCell.v === 'number' ? costCell.v : parseFloat(costCell.v.toString())
-        console.log(`Row ${row}: Parsed cost value =`, costValue)
 
         if (isValidNumber(costValue)) {
           // Add markup values for each percentage
@@ -113,18 +95,14 @@ export class MasterWorkbookGenerator {
                 v: markupValue,
                 z: '0.00' // number format with 2 decimal places
               }
-              console.log(`💰 Row ${row}: Added ${MARKUP_PERCENTAGES[i] * 100}% markup: ${costValue} -> ${markupValue} at ${markupAddress}`)
             } else {
               newWorksheet[markupAddress] = {
                 t: 's',
                 v: 'ERROR'
               }
-              console.log(`❌ Row ${row}: Markup calculation failed`)
             }
           }
-          calculatedRows++
         } else {
-          console.log(`⚠️ Row ${row}: Invalid cost value: ${costValue}`)
           // If cost is not a valid number, add error markers
           for (let i = 0; i < MARKUP_PERCENTAGES.length; i++) {
             const newCol = range.e.c + 1 + i
@@ -134,19 +112,22 @@ export class MasterWorkbookGenerator {
               v: 'N/A'
             }
           }
-          errorRows++
         }
       } else {
-        console.log(`⚠️ Row ${row}: No cost cell or empty value`)
-        errorRows++
+        // If no cost cell or empty, add N/A markers
+        for (let i = 0; i < MARKUP_PERCENTAGES.length; i++) {
+          const newCol = range.e.c + 1 + i
+          const markupAddress = XLSX.utils.encode_cell({ r: row, c: newCol })
+          newWorksheet[markupAddress] = {
+            t: 's',
+            v: 'N/A'
+          }
+        }
       }
     }
 
-    console.log(`💰 Markup calculation summary: ${calculatedRows} rows calculated, ${errorRows} rows with errors`)
-
     // Update worksheet range
     newWorksheet['!ref'] = XLSX.utils.encode_range(newRange)
-    console.log(`📊 Updated worksheet range to: ${newWorksheet['!ref']}`)
 
     // Preserve column widths and other properties
     if (worksheet['!cols']) {
@@ -154,10 +135,8 @@ export class MasterWorkbookGenerator {
         ...worksheet['!cols'],
         ...MARKUP_PERCENTAGES.map(() => ({ wch: 12 })) // Default width for markup columns
       ]
-      console.log(`📐 Updated column widths`)
     }
 
-    console.log(`✅ addMarkupColumns completed successfully`)
     return newWorksheet
   }
 

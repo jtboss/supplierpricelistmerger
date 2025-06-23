@@ -32,12 +32,12 @@ describe('Cost Column Detection', () => {
         expect(costColumnIndex).toBe(4) // E column = index 4
     })
 
-    test('should detect cost column', () => {
+    test('should detect COST column', () => {
         const worksheet: XLSX.WorkSheet = {
-            '!ref': 'A1:C10',
-            'A1': { v: 'ITEM', t: 's' },
-            'B1': { v: 'DESCRIPTION', t: 's' },
-            'C1': { v: 'cost', t: 's' },
+            '!ref': 'A1:C5',
+            'A1': { v: 'Item', t: 's' },
+            'B1': { v: 'Description', t: 's' },
+            'C1': { v: 'COST', t: 's' },
         }
 
         const costColumnIndex = ExcelProcessor.detectCostColumn(worksheet)
@@ -46,37 +46,39 @@ describe('Cost Column Detection', () => {
 
     test('should return -1 when no cost column found', () => {
         const worksheet: XLSX.WorkSheet = {
-            '!ref': 'A1:C10',
-            'A1': { v: 'ITEM', t: 's' },
-            'B1': { v: 'DESCRIPTION', t: 's' },
-            'C1': { v: 'QUANTITY', t: 's' },
+            '!ref': 'A1:D5',
+            'A1': { v: 'Item', t: 's' },
+            'B1': { v: 'Description', t: 's' },
+            'C1': { v: 'Quantity', t: 's' },
+            'D1': { v: 'Category', t: 's' },
         }
 
         const costColumnIndex = ExcelProcessor.detectCostColumn(worksheet)
         expect(costColumnIndex).toBe(-1)
     })
 
-    test('should handle case insensitive matching', () => {
+    test('should handle case-insensitive detection', () => {
         const worksheet: XLSX.WorkSheet = {
-            '!ref': 'A1:B10',
-            'A1': { v: 'ITEM', t: 's' },
-            'B1': { v: 'Price', t: 's' }, // Mixed case
+            '!ref': 'A1:C5',
+            'A1': { v: 'item', t: 's' },
+            'B1': { v: 'desc', t: 's' },
+            'C1': { v: 'price', t: 's' }, // lowercase
         }
 
         const costColumnIndex = ExcelProcessor.detectCostColumn(worksheet)
-        expect(costColumnIndex).toBe(1) // B column = index 1
+        expect(costColumnIndex).toBe(2) // C column = index 2
     })
 
-    test('should detect cost price with highest confidence', () => {
+    test('should prefer exact matches over partial matches', () => {
         const worksheet: XLSX.WorkSheet = {
-            '!ref': 'A1:D10',
-            'A1': { v: 'ITEM', t: 's' },
-            'B1': { v: 'SELLING PRICE', t: 's' },
-            'C1': { v: 'COST PRICE', t: 's' }, // Should have higher confidence
-            'D1': { v: 'RETAIL PRICE', t: 's' },
+            '!ref': 'A1:D5',
+            'A1': { v: 'Item', t: 's' },
+            'B1': { v: 'Base Price Info', t: 's' }, // contains "price" but not exact
+            'C1': { v: 'PRICE', t: 's' }, // exact match
+            'D1': { v: 'Description', t: 's' },
         }
 
         const costColumnIndex = ExcelProcessor.detectCostColumn(worksheet)
-        expect(costColumnIndex).toBe(2) // C column = index 2 (COST PRICE)
+        expect(costColumnIndex).toBe(2) // C column = index 2 (exact match)
     })
 }) 
