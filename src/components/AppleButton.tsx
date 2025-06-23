@@ -1,9 +1,9 @@
 'use client'
 
-import React from 'react'
+import { buttonVariants } from '@/lib/animations'
 import { motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
-import { buttonVariants } from '@/lib/animations'
+import React from 'react'
 
 interface AppleButtonProps {
   children: React.ReactNode
@@ -12,20 +12,18 @@ interface AppleButtonProps {
   loading?: boolean
   disabled?: boolean
   loadingText?: string
-  successText?: string
   className?: string
   onClick?: () => void
   type?: 'button' | 'submit' | 'reset'
 }
 
-export function AppleButton({ 
-  children, 
-  variant = 'primary', 
+export function AppleButton({
+  children,
+  variant = 'primary',
   size = 'md',
   loading = false,
   disabled = false,
   loadingText = 'Processing...',
-  successText,
   className = '',
   onClick,
   type = 'button'
@@ -111,17 +109,27 @@ export function AppleButton({
 
 // Specialized merge button component
 interface MergeButtonProps {
-  files: any[]
+  files: ProcessedFile[]
   onMerge: () => Promise<void>
   disabled?: boolean
   loading?: boolean
   className?: string
 }
 
-export function MergeButton({ 
-  files, 
-  onMerge, 
-  disabled = false, 
+interface ProcessedFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  status: 'pending' | 'processing' | 'completed' | 'error'
+  progress?: number
+  error?: string
+}
+
+export function MergeButton({
+  files,
+  onMerge,
+  disabled = false,
   loading = false,
   className = ''
 }: MergeButtonProps) {

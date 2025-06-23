@@ -10,13 +10,13 @@ vi.mock('xlsx', () => ({
     book_new: vi.fn(() => ({ SheetNames: [], Sheets: {} })),
     book_append_sheet: vi.fn(),
     sheet_to_json: vi.fn(),
-    aoa_to_sheet: vi.fn((data) => {
+    aoa_to_sheet: vi.fn((data: unknown[][]) => {
       // Create a mock worksheet with proper structure
-      const worksheet: any = { '!ref': 'A1:Z100' }
+      const worksheet: Record<string, unknown> = { '!ref': 'A1:Z100' }
 
       // Add cells based on data
-      data.forEach((row: any[], rowIndex: number) => {
-        row.forEach((cell: any, colIndex: number) => {
+      data.forEach((row: unknown[], rowIndex: number) => {
+        row.forEach((cell: unknown, colIndex: number) => {
           const cellAddress = String.fromCharCode(65 + colIndex) + (rowIndex + 1)
           worksheet[cellAddress] = {
             v: cell,
@@ -27,32 +27,24 @@ vi.mock('xlsx', () => ({
 
       return worksheet
     }),
-    decode_range: vi.fn((ref: string) => {
-      // Parse basic cell ranges like "A1:C5"
-      const [start, end] = ref.split(':')
-      const startCol = start.charCodeAt(0) - 65 // A=0, B=1, etc
-      const startRow = parseInt(start.slice(1)) - 1 // 1-based to 0-based
-      const endCol = end.charCodeAt(0) - 65
-      const endRow = parseInt(end.slice(1)) - 1
-
+    encode_cell: vi.fn((cellRef: { r: number; c: number }) => {
+      return String.fromCharCode(65 + cellRef.c) + (cellRef.r + 1)
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    decode_range: vi.fn((_ref: string) => {
+      // Simple mock for A1:Z100 range
       return {
-        s: { r: startRow, c: startCol },
-        e: { r: endRow, c: endCol }
+        s: { r: 0, c: 0 }, // start
+        e: { r: 99, c: 25 } // end
       }
     }),
-    encode_range: vi.fn((range: any) => {
-      const startCol = String.fromCharCode(65 + range.s.c)
-      const startRow = range.s.r + 1
-      const endCol = String.fromCharCode(65 + range.e.c)
-      const endRow = range.e.r + 1
-      return `${startCol}${startRow}:${endCol}${endRow}`
+    encode_range: vi.fn((range: { s: { r: number; c: number }, e: { r: number; c: number } }) => {
+      const startCell = String.fromCharCode(65 + range.s.c) + (range.s.r + 1)
+      const endCell = String.fromCharCode(65 + range.e.c) + (range.e.r + 1)
+      return `${startCell}:${endCell}`
     }),
-    encode_cell: vi.fn((cell: any) => {
-      const col = String.fromCharCode(65 + cell.c)
-      const row = cell.r + 1
-      return `${col}${row}`
-    }),
-  },
+    writeFile: vi.fn()
+  }
 }))
 
 // Mock FileReader for testing file operations

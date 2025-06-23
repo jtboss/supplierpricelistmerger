@@ -187,13 +187,6 @@ export default function ApplePage() {
     setErrors([])
   }, [])
 
-  const fileListSummary = {
-    total: files.length,
-    completed: files.filter(f => f.status === 'completed').length,
-    failed: files.filter(f => f.status === 'error').length,
-    withCostColumns: files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <motion.div
@@ -236,19 +229,28 @@ export default function ApplePage() {
               exit="out"
               className="max-w-4xl mx-auto space-y-8"
             >
-              <AppleDropZone onFilesSelected={handleFilesSelected} />
+              <AppleDropZone
+                onFilesSelected={handleFilesSelected}
+                acceptedTypes={['.xlsx', '.xls', '.csv']}
+                maxFiles={10}
+                maxFileSize="10MB"
+                title="Upload your supplier files"
+                subtitle="Drag and drop Excel or CSV files, or click to browse"
+              />
 
               {files.length > 0 && (
                 <motion.div variants={containerVariants}>
                   <AppleFileList
                     files={files}
                     onRemoveFile={handleRemoveFile}
-                    summary={fileListSummary}
+                    showStatus={true}
+                    className="mb-6"
                   />
 
                   <div className="mt-8 flex justify-center">
                     <MergeButton
-                      onClick={handleMergeFiles}
+                      files={files}
+                      onMerge={handleMergeFiles}
                       disabled={files.length === 0}
                     />
                   </div>
@@ -267,9 +269,9 @@ export default function ApplePage() {
               className="max-w-2xl mx-auto"
             >
               <ProcessingProgress
-                progress={processingProgress}
                 currentStep={currentProcessingStep}
-                totalSteps={processingSteps.length}
+                steps={processingSteps}
+                progress={processingProgress}
               />
             </motion.div>
           )}
@@ -301,7 +303,7 @@ export default function ApplePage() {
                 </p>
               </div>
 
-              {fileListSummary.withCostColumns > 0 && (
+              {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length > 0 && (
                 <motion.div
                   className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -312,7 +314,7 @@ export default function ApplePage() {
                     Markup Columns Added
                   </h3>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Successfully added 5%, 10%, 15%, 20%, and 30% markup columns to {fileListSummary.withCostColumns} files
+                    Successfully added 5%, 10%, 15%, 20%, and 30% markup columns to {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length} files
                   </p>
                 </motion.div>
               )}
@@ -338,19 +340,23 @@ export default function ApplePage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <AppleButton
                   variant="primary"
-                  icon={Download}
+                  size="lg"
                   onClick={handleDownload}
                   disabled={!mergedFileUrl}
+                  className="flex items-center space-x-2"
                 >
-                  Download Complete
+                  <Download className="w-5 h-5" />
+                  <span>Download Complete</span>
                 </AppleButton>
 
                 <AppleButton
                   variant="secondary"
-                  icon={Upload}
+                  size="lg"
                   onClick={handleStartOver}
+                  className="flex items-center space-x-2"
                 >
-                  Process More Files
+                  <Upload className="w-5 h-5" />
+                  <span>Process More Files</span>
                 </AppleButton>
               </div>
             </motion.div>
