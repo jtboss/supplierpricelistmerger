@@ -3,7 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "Production-grade Excel supplier price list merger with automatic markup calculations",
-  "keywords": ["excel", "supplier", "price-list", "markup", "business-tools"],
+  "keywords": [
+    "excel",
+    "supplier",
+    "price-list",
+    "markup",
+    "business-tools"
+  ],
   "author": "Tesla-Level Engineering Team",
   "engines": {
     "node": ">=18.0.0",
@@ -34,6 +40,7 @@
     "@types/xlsx": "^0.0.35",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.18.1",
     "lucide-react": "^0.522.0",
     "next": "15.3.4",
     "react": "^19.0.0",
