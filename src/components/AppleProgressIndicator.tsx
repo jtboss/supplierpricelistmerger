@@ -1,9 +1,7 @@
 'use client'
 
-import React from 'react'
-import { motion } from 'framer-motion'
-import { CheckCircle, Loader2, AlertCircle } from 'lucide-react'
 import { progressVariants } from '@/lib/animations'
+import { motion } from 'framer-motion'
 
 interface AppleProgressIndicatorProps {
   progress: number
@@ -34,7 +32,7 @@ export function AppleProgressIndicator({
 
   if (variant === 'circular') {
     return (
-      <CircularProgress 
+      <CircularProgress
         progress={progress}
         size={size}
         showPercentage={showPercentage}
@@ -52,7 +50,7 @@ export function AppleProgressIndicator({
           <span className={`font-medium text-gray-700 ${sizeClasses[size].text}`}>
             Progress
           </span>
-          <motion.span 
+          <motion.span
             className={`font-semibold text-blue-600 ${sizeClasses[size].text}`}
             key={progress}
             initial={animated ? { scale: 0.8, opacity: 0 } : false}
@@ -63,7 +61,7 @@ export function AppleProgressIndicator({
           </motion.span>
         </div>
       )}
-      
+
       <div className={`w-full bg-gray-200 rounded-full ${sizeClasses[size].height} overflow-hidden`}>
         <motion.div
           className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full relative"
@@ -87,9 +85,9 @@ export function AppleProgressIndicator({
           )}
         </motion.div>
       </div>
-      
+
       {showDescription && currentStep && (
-        <motion.p 
+        <motion.p
           className={`mt-2 text-gray-600 ${sizeClasses[size].text}`}
           initial={animated ? { opacity: 0, y: 5 } : false}
           animate={animated ? { opacity: 1, y: 0 } : false}
@@ -110,19 +108,19 @@ interface CircularProgressProps {
   animated: boolean
 }
 
-function CircularProgress({ 
-  progress, 
-  size, 
-  showPercentage, 
-  className, 
-  animated 
+function CircularProgress({
+  progress,
+  size,
+  showPercentage,
+  className,
+  animated
 }: CircularProgressProps) {
   const sizeMap = {
     sm: { size: 'w-12 h-12', strokeWidth: 2, fontSize: 'text-xs' },
     md: { size: 'w-16 h-16', strokeWidth: 3, fontSize: 'text-sm' },
     lg: { size: 'w-24 h-24', strokeWidth: 4, fontSize: 'text-base' }
   }
-  
+
   const { size: sizeClass, strokeWidth, fontSize } = sizeMap[size]
   const radius = 50 - strokeWidth
   const circumference = 2 * Math.PI * radius
@@ -141,7 +139,7 @@ function CircularProgress({
           fill="none"
           className="text-gray-200"
         />
-        
+
         {/* Progress circle */}
         <motion.circle
           cx="50"
@@ -153,12 +151,12 @@ function CircularProgress({
           strokeLinecap="round"
           className="text-blue-500"
           style={
-            animated 
-              ? undefined 
+            animated
+              ? undefined
               : {
-                  strokeDasharray: circumference,
-                  strokeDashoffset: strokeDashoffset
-                }
+                strokeDasharray: circumference,
+                strokeDashoffset: strokeDashoffset
+              }
           }
           initial={animated ? {
             strokeDasharray: circumference,
@@ -173,10 +171,10 @@ function CircularProgress({
           } : undefined}
         />
       </svg>
-      
+
       {showPercentage && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <motion.span 
+          <motion.span
             className={`font-semibold text-gray-700 ${fontSize}`}
             key={progress}
             initial={animated ? { scale: 0.8, opacity: 0 } : false}
@@ -199,14 +197,14 @@ interface ProcessingProgressProps {
   className?: string
 }
 
-export function ProcessingProgress({ 
-  currentStep, 
-  steps, 
-  progress, 
-  className = '' 
+export function ProcessingProgress({
+  currentStep,
+  steps,
+  progress,
+  className = ''
 }: ProcessingProgressProps) {
   return (
-    <motion.div 
+    <motion.div
       className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -220,16 +218,16 @@ export function ProcessingProgress({
         >
           <div className="w-full h-full border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
         </motion.div>
-        
+
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Processing Files
         </h3>
-        
+
         <p className="text-sm text-gray-600">
           {currentStep}
         </p>
       </div>
-      
+
       <AppleProgressIndicator
         progress={progress}
         variant="linear"
@@ -237,21 +235,19 @@ export function ProcessingProgress({
         showPercentage={true}
         animated={true}
       />
-      
+
       <div className="mt-4 space-y-2">
         {steps.map((step, index) => (
           <motion.div
             key={step}
-            className={`text-xs flex items-center space-x-2 ${
-              step === currentStep ? 'text-blue-600' : 'text-gray-400'
-            }`}
+            className={`text-xs flex items-center space-x-2 ${step === currentStep ? 'text-blue-600' : 'text-gray-400'
+              }`}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <div className={`w-1 h-1 rounded-full ${
-              step === currentStep ? 'bg-blue-600' : 'bg-gray-300'
-            }`} />
+            <div className={`w-1 h-1 rounded-full ${step === currentStep ? 'bg-blue-600' : 'bg-gray-300'
+              }`} />
             <span>{step}</span>
           </motion.div>
         ))}

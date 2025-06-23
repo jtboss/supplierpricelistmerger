@@ -1,0 +1,50 @@
+# Cursor Rules for Supplier Price List Merger
+
+## Project Overview
+This is a Next.js 15 TypeScript application for merging Excel supplier price lists with automatic markup calculations. Built with Tesla-level engineering standards and comprehensive documentation.
+
+## Architecture
+- **Frontend**: Next.js 15 with App Router, TypeScript, Tailwind CSS
+- **Excel Processing**: XLSX library for client-side processing
+- **UI Components**: Radix UI primitives with custom styling
+- **Testing**: Vitest + React Testing Library + Jest
+- **State Management**: React hooks and context
+- **Validation**: Zod schemas
+
+## Key Directories
+- `src/app/` - Next.js App Router pages and layouts
+- `src/components/` - React components (ui, supplier-merger, common)
+- `src/lib/` - Core business logic (excel processing, calculations, utils)
+- `src/types/` - TypeScript type definitions
+- `src/hooks/` - Custom React hooks
+- `src/stores/` - State management
+- `docs/` - Comprehensive project documentation
+
+## Coding Standards
+- Follow TypeScript strict mode
+- Use functional components with hooks
+- Implement proper error handling with custom error classes
+- Follow layered architecture (UI → Services → Utils)
+- Use descriptive naming (PascalCase for components, camelCase for functions)
+- Add JSDoc comments for all public APIs
+- Maintain 90%+ test coverage for business logic
+
+## Key Files to Understand
+- `src/lib/excel/processor.ts` - Core Excel processing engine
+- `src/types/index.ts` - Complete TypeScript definitions
+- `docs/TECHNICAL_SPECIFICATION.md` - Detailed architecture
+- `docs/IMPLEMENTATION_PLAN.md` - 7-phase development roadmap
+
+## Development Workflow
+1. Follow TDD approach - write tests first
+2. Use the 7-phase implementation plan in docs/
+3. Reference technical specification for architecture decisions
+4. Update documentation when making changes
+5. Ensure all changes maintain backward compatibility
+
+## Background Agent Guidelines
+- Always reference the comprehensive documentation in `/docs`
+- Follow the established patterns in existing code
+- Maintain the Tesla-level engineering standards
+- Use the TypeScript definitions in `src/types/index.ts`
+- Test all changes with the existing test infrastructure 

@@ -1,22 +1,28 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Sparkles, FileCheck, Upload } from 'lucide-react'
-import { AppleDropZone } from '@/components/AppleDropZone'
-import { AppleFileList, FileListSummary } from '@/components/AppleFileList'
 import { AppleButton, MergeButton } from '@/components/AppleButton'
+import { AppleDropZone } from '@/components/AppleDropZone'
+import { AppleFileList } from '@/components/AppleFileList'
 import { ProcessingProgress } from '@/components/AppleProgressIndicator'
 import { containerVariants, pageVariants } from '@/lib/animations'
+import { MasterWorkbookGenerator } from '@/lib/excel/masterWorkbook'
+import { ExcelProcessor } from '@/lib/excel/processor'
+import { generateId } from '@/lib/utils'
+import { AppError, FileObject } from '@/types'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Download, FileCheck, Sparkles, Upload } from 'lucide-react'
+import { useCallback, useState } from 'react'
 
 interface ProcessedFile {
   id: string
   name: string
   size: number
   type: string
+  file: File
   status: 'pending' | 'processing' | 'completed' | 'error'
   progress?: number
   error?: string
+  costColumnIndex?: number
 }
 
 type AppState = 'upload' | 'processing' | 'completed'
@@ -27,14 +33,15 @@ export default function ApplePage() {
   const [processingProgress, setProcessingProgress] = useState(0)
   const [currentProcessingStep, setCurrentProcessingStep] = useState('')
   const [mergedFileUrl, setMergedFileUrl] = useState<string | null>(null)
+  const [errors, setErrors] = useState<AppError[]>([])
 
   const processingSteps = [
     'Validating file formats',
     'Reading Excel sheets',
-    'Parsing CSV data',
+    'Detecting cost columns',
+    'Adding markup calculations',
     'Merging supplier data',
-    'Generating output file',
-    'Finalizing download'
+    'Generating master workbook'
   ]
 
   const handleFilesSelected = useCallback((selectedFiles: File[]) => {
@@ -43,9 +50,10 @@ export default function ApplePage() {
       name: file.name,
       size: file.size,
       type: file.type,
+      file: file,
       status: 'pending'
     }))
-    
+
     setFiles(prev => [...prev, ...newFiles])
   }, [])
 
@@ -56,33 +64,110 @@ export default function ApplePage() {
   const handleMergeFiles = useCallback(async () => {
     setAppState('processing')
     setProcessingProgress(0)
-    
-    // Simulate file processing with realistic timing
-    for (let i = 0; i < processingSteps.length; i++) {
-      setCurrentProcessingStep(processingSteps[i])
-      
-      // Update progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        setProcessingProgress((i * 100 + progress) / processingSteps.length)
+    setErrors([])
+
+    try {
+      const processedFiles: FileObject[] = []
+
+      // Process each file with real Excel processing
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const stepProgress = (i / files.length) * 100
+
+        setCurrentProcessingStep(`Processing ${file.name}...`)
+        setProcessingProgress(stepProgress)
+
+        // Update file status to processing
+        setFiles(prev => prev.map(f =>
+          f.id === file.id ? { ...f, status: 'processing' as const } : f
+        ))
+
+        try {
+          // Real Excel processing
+          const result = await ExcelProcessor.processFile(file.file)
+
+          const processedFile: FileObject = {
+            id: file.id,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            file: file.file,
+            workbook: result.workbook,
+            costColumnIndex: result.analysis.costColumnIndex,
+            errors: [],
+            status: 'completed'
+          }
+
+          processedFiles.push(processedFile)
+
+          // Update file status to completed
+          setFiles(prev => prev.map(f =>
+            f.id === file.id ? {
+              ...f,
+              status: 'completed' as const,
+              costColumnIndex: result.analysis.costColumnIndex
+            } : f
+          ))
+
+        } catch (err) {
+          console.error(`Error processing file ${file.name}:`, err)
+
+          const errorMessage = err instanceof Error ? err.message : 'Unknown processing error'
+          const errorObj: AppError = {
+            id: generateId(),
+            type: 'PROCESSING_ERROR',
+            message: errorMessage,
+            fileId: file.id,
+            timestamp: new Date(),
+            severity: 'high'
+          }
+
+          setErrors(prev => [...prev, errorObj])
+
+          // Update file status to error
+          setFiles(prev => prev.map(f =>
+            f.id === file.id ? {
+              ...f,
+              status: 'error' as const,
+              error: errorMessage
+            } : f
+          ))
+        }
       }
+
+      // Generate master workbook if we have any successful files
+      if (processedFiles.length > 0) {
+        setCurrentProcessingStep('Generating master workbook...')
+        setProcessingProgress(90)
+
+        const masterWorkbook = await MasterWorkbookGenerator.generateMasterWorkbook(processedFiles)
+
+        // Trigger download
+        setCurrentProcessingStep('Preparing download...')
+        setProcessingProgress(100)
+
+        MasterWorkbookGenerator.downloadMasterWorkbook(masterWorkbook)
+        setMergedFileUrl('/api/download/merged-suppliers.xlsx')
+      }
+
+      setAppState('completed')
+
+    } catch (err) {
+      console.error('Merge process failed:', err)
+      const errorObj: AppError = {
+        id: generateId(),
+        type: 'PROCESSING_ERROR',
+        message: err instanceof Error ? err.message : 'Merge process failed',
+        timestamp: new Date(),
+        severity: 'critical'
+      }
+      setErrors(prev => [...prev, errorObj])
+      setAppState('upload')
     }
-    
-    // Mark all files as completed
-    setFiles(prev => prev.map(file => ({
-      ...file,
-      status: 'completed' as const
-    })))
-    
-    // Simulate file generation
-    setMergedFileUrl('/api/download/merged-suppliers.xlsx')
-    setAppState('completed')
-  }, [])
+  }, [files])
 
   const handleDownload = useCallback(() => {
     if (mergedFileUrl) {
-      // In a real app, this would trigger the actual download
-      console.log('Downloading:', mergedFileUrl)
       // Reset for another merge
       setTimeout(() => {
         setAppState('upload')
@@ -99,92 +184,76 @@ export default function ApplePage() {
     setMergedFileUrl(null)
     setProcessingProgress(0)
     setCurrentProcessingStep('')
+    setErrors([])
   }, [])
 
   return (
-    <motion.div
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
-      variants={pageVariants}
-      initial="initial"
-      animate="in"
-      exit="out"
-    >
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+      <motion.div
+        className="container mx-auto px-4 py-8"
+        variants={pageVariants}
+        initial="initial"
+        animate="in"
+        exit="out"
+      >
         {/* Header */}
-        <motion.div 
-          className="text-center space-y-2 mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+        <motion.header
+          className="text-center mb-12"
+          variants={containerVariants}
         >
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <Sparkles className="w-8 h-8 text-blue-600" />
-            </motion.div>
-            <h1 className="text-4xl font-bold text-gray-900">
-              Supplier File Merger
-            </h1>
-          </div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Effortlessly merge Excel and CSV supplier files with our intelligent processing engine. 
-            Simply upload your files and let us handle the complexity.
+          <motion.div
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mb-6 shadow-lg"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Sparkles className="w-8 h-8 text-white" />
+          </motion.div>
+
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Supplier Price List Merger
+          </h1>
+
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Transform your supplier data with intelligent markup calculations.
+            <br />Tesla-level precision meets Jony Ive-inspired design.
           </p>
-        </motion.div>
+        </motion.header>
 
         <AnimatePresence mode="wait">
           {appState === 'upload' && (
             <motion.div
               key="upload"
               variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="space-y-8"
+              initial="initial"
+              animate="in"
+              exit="out"
+              className="max-w-4xl mx-auto space-y-8"
             >
-              {/* Drop Zone */}
-              <motion.div variants={containerVariants}>
-                <AppleDropZone
-                  onFilesSelected={handleFilesSelected}
-                  acceptedTypes={['.xlsx', '.xls', '.csv']}
-                  maxFiles={10}
-                  maxFileSize="10MB"
-                  title="Upload your supplier files"
-                  subtitle="Drag and drop Excel or CSV files, or click to browse"
-                  className="mb-8"
-                />
-              </motion.div>
+              <AppleDropZone
+                onFilesSelected={handleFilesSelected}
+                acceptedTypes={['.xlsx', '.xls', '.csv']}
+                maxFiles={10}
+                maxFileSize="10MB"
+                title="Upload your supplier files"
+                subtitle="Drag and drop Excel or CSV files, or click to browse"
+              />
 
-              {/* File List */}
               {files.length > 0 && (
-                <motion.div 
-                  variants={containerVariants}
-                  className="space-y-4"
-                >
-                  <FileListSummary files={files} />
-                  
+                <motion.div variants={containerVariants}>
                   <AppleFileList
                     files={files}
                     onRemoveFile={handleRemoveFile}
                     showStatus={true}
-                    showSize={true}
-                    emptyState={
-                      <div className="text-center py-12">
-                        <Upload className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500">No files uploaded yet</p>
-                      </div>
-                    }
+                    className="mb-6"
                   />
-                  
-                  {/* Merge Button */}
-                  <MergeButton
-                    files={files}
-                    onMerge={handleMergeFiles}
-                    disabled={files.length === 0}
-                    className="mt-6"
-                  />
+
+                  <div className="mt-8 flex justify-center">
+                    <MergeButton
+                      files={files}
+                      onMerge={handleMergeFiles}
+                      disabled={files.length === 0}
+                    />
+                  </div>
                 </motion.div>
               )}
             </motion.div>
@@ -193,11 +262,11 @@ export default function ApplePage() {
           {appState === 'processing' && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-md mx-auto"
+              variants={containerVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              className="max-w-2xl mx-auto"
             >
               <ProcessingProgress
                 currentStep={currentProcessingStep}
@@ -210,107 +279,90 @@ export default function ApplePage() {
           {appState === 'completed' && (
             <motion.div
               key="completed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="max-w-2xl mx-auto"
+              variants={containerVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              className="max-w-2xl mx-auto text-center space-y-8"
             >
-              {/* Success State */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
+              <motion.div
+                className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-6"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.2 }}
+              >
+                <FileCheck className="w-10 h-10 text-green-600 dark:text-green-400" />
+              </motion.div>
+
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                  Merger Complete!
+                </h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                  Your supplier data has been processed and merged with markup calculations.
+                </p>
+              </div>
+
+              {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length > 0 && (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-                  className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
-                >
-                  <FileCheck className="w-8 h-8 text-green-600" />
-                </motion.div>
-                
-                <motion.h2 
-                  className="text-2xl font-bold text-gray-900 mb-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Files Merged Successfully!
-                </motion.h2>
-                
-                <motion.p 
-                  className="text-gray-600 mb-8"
-                  initial={{ opacity: 0, y: 10 }}
+                  className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  Your supplier files have been intelligently merged and are ready for download.
-                  The merged file contains all supplier data with proper formatting and validation.
-                </motion.p>
-
-                {/* File Summary */}
-                <motion.div 
-                  className="bg-gray-50 rounded-lg p-4 mb-8"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Files processed:</span>
-                    <span className="font-semibold text-gray-900">{files.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-gray-600">Output format:</span>
-                    <span className="font-semibold text-gray-900">Excel (.xlsx)</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-gray-600">Estimated size:</span>
-                    <span className="font-semibold text-gray-900">
-                      {(files.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024 * 0.8).toFixed(1)} MB
-                    </span>
-                  </div>
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    Markup Columns Added
+                  </h3>
+                  <p className="text-blue-700 dark:text-blue-300">
+                    Successfully added 5%, 10%, 15%, 20%, and 30% markup columns to {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length} files
+                  </p>
                 </motion.div>
+              )}
 
-                {/* Action Buttons */}
-                <motion.div 
-                  className="flex flex-col sm:flex-row gap-4 justify-center"
-                  initial={{ opacity: 0, y: 10 }}
+              {errors.length > 0 && (
+                <motion.div
+                  className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
+                  transition={{ delay: 0.4 }}
                 >
-                  <AppleButton
-                    variant="primary"
-                    size="lg"
-                    onClick={handleDownload}
-                    className="flex items-center space-x-2"
-                  >
-                    <Download className="w-5 h-5" />
-                    <span>Download Merged File</span>
-                  </AppleButton>
-                  
-                  <AppleButton
-                    variant="secondary"
-                    size="lg"
-                    onClick={handleStartOver}
-                  >
-                    Merge More Files
-                  </AppleButton>
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
+                    Processing Errors
+                  </h3>
+                  <ul className="text-red-700 dark:text-red-300 text-left space-y-1">
+                    {errors.map(error => (
+                      <li key={error.id}>• {error.message}</li>
+                    ))}
+                  </ul>
                 </motion.div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={handleDownload}
+                  disabled={!mergedFileUrl}
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Download Complete</span>
+                </AppleButton>
+
+                <AppleButton
+                  variant="secondary"
+                  size="lg"
+                  onClick={handleStartOver}
+                  className="flex items-center space-x-2"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>Process More Files</span>
+                </AppleButton>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Footer */}
-        <motion.div 
-          className="text-center mt-16 pt-8 border-t border-gray-200"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
-        >
-          <p className="text-sm text-gray-500">
-            Built with precision and care. Designed for efficiency and elegance.
-          </p>
-        </motion.div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
