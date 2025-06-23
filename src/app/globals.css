@@ -1,127 +1,332 @@
 @import "tailwindcss";
 
-/* Apple Design System Variables */
+/* Aceternity UI Design System */
 :root {
-  /* Primary Apple Blue System */
-  --apple-blue-50: #EFF6FF;
-  --apple-blue-100: #DBEAFE;
-  --apple-blue-200: #BFDBFE;
-  --apple-blue-300: #93C5FD;
-  --apple-blue-400: #60A5FA;
-  --apple-blue-500: #3B82F6;
-  --apple-blue-600: #2563EB;
-  --apple-blue-700: #1D4ED8;
-  --apple-blue-800: #1E40AF;
-  --apple-blue-900: #1E3A8A;
-
-  /* Apple-specific timing functions */
-  --ease-apple: cubic-bezier(0.4, 0.0, 0.2, 1);
-  --duration-200: 200ms;
-  --duration-300: 300ms;
+  /* Aceternity Color System */
+  --bg-primary: #000000;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+  --bg-beams: linear-gradient(to bottom right, #0f172a, #581c87, #0f172a);
   
-  /* Apple-specific shadows */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  /* Gradients */
+  --gradient-primary: linear-gradient(to right, #a855f7, #ec4899);
+  --gradient-secondary: linear-gradient(to bottom right, #8b5cf6, #ec4899);
+  --gradient-text-hero: linear-gradient(to right, #ffffff, #e879f9, #f9a8d4);
+  --gradient-text-accent: linear-gradient(to right, #a855f7, #ec4899);
+  --gradient-glow: conic-gradient(from 90deg at 50% 50%, #E2CBFF 0%, #393BB2 50%, #E2CBFF 100%);
+  --gradient-card: linear-gradient(to right, #7c3aed, #ec4899);
+  
+  /* Surface Colors */
+  --surface-card: rgba(0, 0, 0, 0.4);
+  --surface-card-hover: rgba(0, 0, 0, 0.6);
+  --surface-glass: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --surface-border-hover: rgba(168, 85, 247, 0.5);
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-accent: #a855f7;
+  
+  /* Status Colors */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+  --status-info: #3b82f6;
+  
+  /* Shadows */
+  --shadow-glow-subtle: 0 0 20px rgba(168, 85, 247, 0.3);
+  --shadow-glow-medium: 0 0 40px rgba(168, 85, 247, 0.4);
+  --shadow-glow-strong: 0 0 60px rgba(168, 85, 247, 0.6);
+  --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-float: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  /* Animation Timings */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 1000ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-  /* shadcn/ui CSS variables */
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
+  /* shadcn/ui variables adapted for dark theme */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 262 32% 18%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 262 32% 18%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 262 32% 18%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 262 32% 18%;
+  --input: 262 32% 18%;
+  --ring: 262 83% 58%;
+  --radius: 0.75rem;
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 94.1%;
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+/* Keyframe Animations */
+@keyframes float {
+  0% { 
+    opacity: 0.3; 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  100% { 
+    opacity: 0.8; 
+    transform: translateY(-20px) rotate(5deg); 
+  }
+}
+
+@keyframes tilt {
+  0%, 50%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  75% { transform: rotate(-1deg); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes beam-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+    opacity: 0.4;
+  }
 }
 
 @layer base {
   * {
     border-color: hsl(var(--border));
   }
+  
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', sans-serif;
+    background: var(--bg-primary);
+    background-image: var(--bg-gradient);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  
+  html {
+    scroll-behavior: smooth;
   }
 }
 
-/* Apple Component Styles */
-.apple-card {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-card);
-  border: 1px solid #E4E4E7;
-  padding: 1.5rem;
-  transition: all var(--duration-200) var(--ease-apple);
+/* Aceternity Component Classes */
+.aceternity-card {
+  background: var(--surface-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--surface-border);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  transition: all var(--duration-normal) var(--ease-default);
+  position: relative;
+  overflow: hidden;
 }
 
-.apple-card:hover {
-  box-shadow: var(--shadow-lg);
+.aceternity-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: var(--gradient-card);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.3;
+  transition: opacity var(--duration-normal) var(--ease-default);
+}
+
+.aceternity-card:hover::before {
+  opacity: 1;
+}
+
+.aceternity-card:hover {
+  background: var(--surface-card-hover);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-medium);
+}
+
+.shimmer-button {
+  position: relative;
+  height: 3rem;
+  border-radius: 9999px;
+  padding: 1px;
+  background: var(--gradient-glow);
+  animation: spin 2s linear infinite;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shimmer-button-content {
+  background: #020617;
+  backdrop-filter: blur(12px);
+  padding: 0 1.5rem;
+  border-radius: inherit;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all var(--duration-normal) var(--ease-default);
+}
+
+.shimmer-button:hover .shimmer-button-content {
+  background: rgba(2, 6, 23, 0.8);
+}
+
+.floating-icon {
+  width: 5rem;
+  height: 5rem;
+  background: var(--gradient-secondary);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-medium);
+  animation: pulse 2s infinite;
+}
+
+.glow-effect {
+  box-shadow: var(--shadow-glow-subtle);
+  filter: brightness(1.1);
+}
+
+.glassmorphism {
+  backdrop-filter: blur(16px);
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border);
+}
+
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(ellipse at center, transparent 20%, black);
+}
+
+.text-gradient-hero {
+  background: var(--gradient-text-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-accent {
+  background: var(--gradient-text-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Background Beams */
+.background-beams {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.beam {
+  position: absolute;
+  width: 2px;
+  background: rgba(168, 85, 247, 0.2);
+  animation: beam-float ease-in-out infinite alternate;
 }
 
 /* Custom selection colors */
 ::selection {
-  background-color: var(--apple-blue-100);
-  color: var(--apple-blue-900);
+  background-color: rgba(168, 85, 247, 0.3);
+  color: var(--text-primary);
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-/* Enhanced mobile experience */
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gradient-secondary);
+}
+
+/* Mobile optimizations */
 @media (max-width: 640px) {
-  .apple-card {
-    padding: 1rem;
+  .aceternity-card {
+    padding: 1.5rem;
+    border-radius: 1rem;
   }
+  
+  .floating-icon {
+    width: 4rem;
+    height: 4rem;
+  }
+  
+  .shimmer-button {
+    height: 2.5rem;
+  }
+  
+  .shimmer-button-content {
+    padding: 0 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Focus states */
+.aceternity-focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
+}
+
+/* Utility classes */
+.animate-float {
+  animation: float 2s ease-in-out infinite alternate;
+}
+
+.animate-tilt {
+  animation: tilt 10s infinite linear;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
