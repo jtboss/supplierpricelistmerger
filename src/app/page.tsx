@@ -1,14 +1,16 @@
 'use client'
 
-import { MinimalButton } from '@/components/ui/minimal-button'
-import { MinimalCard } from '@/components/ui/minimal-card'
-import { MinimalDropZone } from '@/components/ui/minimal-drop-zone'
+import { BackgroundBeams } from '@/components/ui/background-beams'
+import { EnhancedButton } from '@/components/ui/enhanced-button'
+import { EnhancedDropZone } from '@/components/ui/enhanced-drop-zone'
+import { SpotlightCard } from '@/components/ui/spotlight-card'
+import { TextGenerateEffect } from '@/components/ui/text-generate-effect'
 import { MasterWorkbookGenerator } from '@/lib/excel/masterWorkbook'
 import { ExcelProcessor } from '@/lib/excel/processor'
 import { generateId } from '@/lib/utils'
 import { AppError, FileObject } from '@/types'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Download, FileCheck, FileSpreadsheet, Upload, X } from 'lucide-react'
+import { Download, FileCheck, FileSpreadsheet, Shield, Sparkles, TrendingUp, Upload, X, Zap } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 interface ProcessedFile {
@@ -25,7 +27,7 @@ interface ProcessedFile {
 
 type AppState = 'upload' | 'processing' | 'completed'
 
-export default function HomePage() {
+export default function EnhancedPage() {
   const [files, setFiles] = useState<ProcessedFile[]>([])
   const [appState, setAppState] = useState<AppState>('upload')
   const [processingProgress, setProcessingProgress] = useState(0)
@@ -168,23 +170,57 @@ export default function HomePage() {
     setErrors([])
   }, [])
 
+  const features = [
+    {
+      icon: <Zap className="w-8 h-8" />,
+      title: "Lightning Fast",
+      description: "Advanced algorithms for rapid Excel analysis and processing"
+    },
+    {
+      icon: <Shield className="w-8 h-8" />,
+      title: "Secure Processing",
+      description: "Your data never leaves your browser - complete privacy"
+    },
+    {
+      icon: <TrendingUp className="w-8 h-8" />,
+      title: "Smart Markup",
+      description: "AI-powered cost column detection and markup calculations"
+    }
+  ]
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="min-h-screen relative overflow-hidden aurora-background">
+      {/* Background Effects */}
+      <BackgroundBeams className="opacity-40" />
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+
+      <div className="container mx-auto px-4 py-12 max-w-6xl relative z-10">
         {/* Header */}
-        <header className="text-center mb-12">
-          <div className="flex items-center justify-center w-16 h-16 bg-primary rounded-lg mb-6 mx-auto">
-            <FileSpreadsheet className="w-8 h-8 text-primary-foreground" />
-          </div>
+        <header className="text-center mb-16">
+          <motion.div
+            className="floating flex items-center justify-center w-20 h-20 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Sparkles className="w-10 h-10 text-primary" />
+          </motion.div>
 
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Supplier Price List Merger
-          </h1>
+          <TextGenerateEffect
+            words="Supplier Price List Merger"
+            className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent"
+          />
 
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <motion.p
+            className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
             Transform your supplier data with intelligent markup calculations.
-            Clean, efficient, and reliable.
-          </p>
+            <br />
+            <span className="text-primary font-semibold">Professional-grade processing meets beautiful design.</span>
+          </motion.p>
         </header>
 
         <AnimatePresence mode="wait">
@@ -194,10 +230,10 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
+              transition={{ duration: 0.5 }}
+              className="space-y-12"
             >
-              <MinimalDropZone
+              <EnhancedDropZone
                 onFilesSelected={handleFilesSelected}
                 acceptedTypes={['.xlsx', '.xls', '.csv']}
                 maxFiles={10}
@@ -206,149 +242,221 @@ export default function HomePage() {
               />
 
               {files.length > 0 && (
-                <MinimalCard>
-                  <h3 className="text-xl font-semibold mb-4">
-                    Selected Files ({files.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {files.map((file) => (
-                      <div
+                <SpotlightCard className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-foreground">
+                      Selected Files ({files.length})
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <span className="text-sm text-muted-foreground">Ready to process</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 mb-8">
+                    {files.map((file, index) => (
+                      <motion.div
                         key={file.id}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                        className="flex items-center justify-between p-4 rounded-xl enhanced-card hover-lift"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
                       >
-                        <div className="flex items-center space-x-3">
-                          <FileSpreadsheet className="w-5 h-5 text-primary" />
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                            <FileSpreadsheet className="w-6 h-6 text-primary" />
+                          </div>
                           <div>
-                            <p className="font-medium text-sm">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            <p className="font-semibold text-foreground">{file.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB • Ready for processing
                             </p>
                           </div>
                         </div>
-                        <button
+                        <motion.button
                           onClick={() => handleRemoveFile(file.id)}
-                          className="p-1 hover:bg-destructive/10 rounded text-destructive"
+                          className="p-2 hover:bg-destructive/10 rounded-full text-destructive transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                          <X className="w-5 h-5" />
+                        </motion.button>
+                      </motion.div>
                     ))}
                   </div>
 
-                  <div className="mt-6 flex justify-center">
-                    <MinimalButton
-                      onClick={handleMergeFiles}
+                  <div className="flex justify-center">
+                    <EnhancedButton
+                      variant="glow"
                       size="lg"
-                      className="px-8"
+                      onClick={handleMergeFiles}
+                      className="px-12"
                     >
-                      Merge {files.length} Files
-                    </MinimalButton>
+                      <span className="flex items-center gap-3">
+                        <Sparkles className="w-5 h-5" />
+                        Process {files.length} Files
+                      </span>
+                    </EnhancedButton>
                   </div>
-                </MinimalCard>
+                </SpotlightCard>
               )}
+
+              {/* Features Section */}
+              <motion.div
+                className="grid md:grid-cols-3 gap-8"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
+                {features.map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 + index * 0.2 }}
+                  >
+                    <SpotlightCard className="text-center p-8 h-full">
+                      <div className="floating flex items-center justify-center w-16 h-16 mx-auto mb-6 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-xl font-bold text-foreground mb-4">
+                        {feature.title}
+                      </h3>
+                      <p className="text-muted-foreground">
+                        {feature.description}
+                      </p>
+                    </SpotlightCard>
+                  </motion.div>
+                ))}
+              </motion.div>
             </motion.div>
           )}
 
           {appState === 'processing' && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.5 }}
+              className="max-w-2xl mx-auto"
             >
-              <MinimalCard className="text-center" padding="lg">
-                <div className="flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6 mx-auto">
-                  <Upload className="w-8 h-8 text-primary-foreground animate-pulse" />
-                </div>
+              <SpotlightCard className="text-center p-12">
+                <motion.div
+                  className="floating w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <Upload className="w-12 h-12 text-primary" />
+                </motion.div>
 
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="text-3xl font-bold text-foreground mb-4">
                   Processing Files...
                 </h2>
 
-                <p className="text-muted-foreground mb-6">
+                <p className="text-lg text-muted-foreground mb-8">
                   {currentProcessingStep}
                 </p>
 
-                <div className="minimal-progress mb-4">
-                  <div
-                    className="minimal-progress-indicator"
-                    style={{ transform: `translateX(-${100 - processingProgress}%)` }}
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-4">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${processingProgress}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   />
                 </div>
 
                 <p className="text-sm text-muted-foreground">
                   {Math.round(processingProgress)}% Complete
                 </p>
-              </MinimalCard>
+              </SpotlightCard>
             </motion.div>
           )}
 
           {appState === 'completed' && (
             <motion.div
               key="completed"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.5 }}
+              className="max-w-3xl mx-auto space-y-8"
             >
-              <MinimalCard className="text-center" padding="lg">
-                <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6 mx-auto">
-                  <FileCheck className="w-8 h-8 text-green-600" />
-                </div>
+              <SpotlightCard className="text-center p-12">
+                <motion.div
+                  className="floating w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", delay: 0.2 }}
+                >
+                  <FileCheck className="w-12 h-12 text-green-500" />
+                </motion.div>
 
-                <h2 className="text-2xl font-bold mb-4">
-                  Merger Complete!
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent mb-4">
+                  Processing Complete!
                 </h2>
-                <p className="text-muted-foreground mb-6">
-                  Your supplier data has been processed and merged with markup calculations.
+                <p className="text-lg text-muted-foreground mb-8">
+                  Your supplier data has been intelligently processed with markup calculations.
                 </p>
 
                 {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-green-800 mb-1">
-                      Markup Columns Added
+                  <motion.div
+                    className="enhanced-card p-6 mb-8 border-green-500/20 bg-green-50/10"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <h3 className="font-semibold text-green-600 mb-2">
+                      ✨ Markup Columns Added
                     </h3>
-                    <p className="text-sm text-green-600">
+                    <p className="text-sm text-green-600/80">
                       Successfully added 5%, 10%, 15%, 20%, and 30% markup columns to {files.filter(f => f.costColumnIndex !== undefined && f.costColumnIndex !== -1).length} files
                     </p>
-                  </div>
+                  </motion.div>
                 )}
 
                 {errors.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-red-800 mb-2">
+                  <motion.div
+                    className="enhanced-card p-6 mb-8 border-red-500/20 bg-red-50/10"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <h3 className="font-semibold text-red-600 mb-2">
                       Processing Errors
                     </h3>
-                    <ul className="text-sm text-red-600 text-left space-y-1">
+                    <ul className="text-sm text-red-600/80 text-left space-y-1">
                       {errors.map(error => (
                         <li key={error.id}>• {error.message}</li>
                       ))}
                     </ul>
-                  </div>
+                  </motion.div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <MinimalButton
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <EnhancedButton
+                    variant="glow"
                     onClick={handleDownload}
                     disabled={!mergedFileUrl}
-                    className="flex items-center gap-2"
                   >
-                    <Download className="w-4 h-4" />
-                    Download Complete
-                  </MinimalButton>
+                    <span className="flex items-center gap-2">
+                      <Download className="w-5 h-5" />
+                      Download Results
+                    </span>
+                  </EnhancedButton>
 
-                  <MinimalButton
-                    variant="secondary"
+                  <EnhancedButton
+                    variant="moving"
                     onClick={handleStartOver}
-                    className="flex items-center gap-2"
                   >
-                    <Upload className="w-4 h-4" />
-                    Process More Files
-                  </MinimalButton>
+                    <span className="flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      Process More Files
+                    </span>
+                  </EnhancedButton>
                 </div>
-              </MinimalCard>
+              </SpotlightCard>
             </motion.div>
           )}
         </AnimatePresence>
